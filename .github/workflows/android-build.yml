@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    name: Generate Project and Build APK
+    name: إنشاء مشروع وبناء ملف APK
     runs-on: ubuntu-latest
 
     steps:
@@ -29,6 +29,7 @@ jobs:
                   gradlePluginPortal()
               }
           }
+
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
               repositories {
@@ -36,6 +37,7 @@ jobs:
                   mavenCentral()
               }
           }
+
           rootProject.name = "BOUH_V68_ONE_UPLOAD_ANDROID_PRO"
           include(":app")
           KTS
@@ -134,10 +136,9 @@ jobs:
 
           public class MainActivity extends Activity {
               private LinearLayout root;
-              private TextView header, output;
+              private TextView output;
               private SharedPreferences prefs;
               private double lastLat = 0, lastLon = 0;
-              private boolean hasGps = false;
 
               @Override public void onCreate(Bundle b) {
                   super.onCreate(b);
@@ -155,7 +156,7 @@ jobs:
                   scroll.addView(root);
                   setContentView(scroll);
 
-                  header = new TextView(this);
+                  TextView header = new TextView(this);
                   header.setText(title);
                   header.setTextColor(Color.rgb(255,207,92));
                   header.setTextSize(22);
@@ -193,11 +194,14 @@ jobs:
                   if (output.getParent() == null) root.addView(output);
               }
 
-              private void showHome() {
-                  base("BOUH V68 Android Pro — One Upload");
+              private void back() {
+                  btn("رجوع").setOnClickListener(v -> showHome());
+              }
 
+              private void showHome() {
+                  base("BOUH V68 Android Pro");
                   TextView sub = new TextView(this);
-                  sub.setText("تطبيق واحد خفيف: GPS، BOUH Target Engine، GPZ Strategy، AI محلي، طبيب فرز، شاعر، وسجل.");
+                  sub.setText("GPS، BOUH Target Engine، GPZ Strategy، AI محلي، طبيب فرز، شاعر، وسجل.");
                   sub.setTextColor(Color.LTGRAY);
                   sub.setPadding(0, 0, 0, 18);
                   root.addView(sub);
@@ -208,19 +212,15 @@ jobs:
                   btn("4) AI عربي محلي").setOnClickListener(v -> showAi());
                   btn("5) طبيب فرز ميداني").setOnClickListener(v -> showHealth());
                   btn("6) شاعر نبطي").setOnClickListener(v -> showPoet());
-                  btn("7) الملاحظات والسجل").setOnClickListener(v -> showLogs());
-                  btn("8) تصدير تقرير نصي").setOnClickListener(v -> card(exportReport()));
-              }
-
-              private void back() {
-                  btn("رجوع").setOnClickListener(v -> showHome());
+                  btn("7) السجل").setOnClickListener(v -> showLogs());
+                  btn("8) تصدير تقرير").setOnClickListener(v -> card(exportReport()));
               }
 
               private void showGps() {
                   base("GPS / GNSS");
                   back();
                   btn("تحديث موقعي").setOnClickListener(v -> updateGps());
-                  card("اضغط تحديث موقعي. إذا لم تظهر الإحداثيات فعّل صلاحية الموقع من إعدادات التطبيق.");
+                  card("اضغط تحديث موقعي واسمح بصلاحية الموقع.");
               }
 
               private void updateGps() {
@@ -230,18 +230,14 @@ jobs:
                       return;
                   }
 
-                  LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-
                   try {
+                      LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
                       Location loc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                       if (loc == null) loc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                       if (loc != null) saveLocation(loc);
 
                       lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 1, new LocationListener() {
-                          @Override public void onLocationChanged(Location location) {
-                              saveLocation(location);
-                          }
-
+                          @Override public void onLocationChanged(Location location) { saveLocation(location); }
                           @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
                           @Override public void onProviderEnabled(String provider) {}
                           @Override public void onProviderDisabled(String provider) {}
@@ -254,14 +250,9 @@ jobs:
               private void saveLocation(Location loc) {
                   lastLat = loc.getLatitude();
                   lastLon = loc.getLongitude();
-                  hasGps = true;
-
                   prefs.edit().putString("last_gps", lastLat + "," + lastLon).apply();
                   addLog("GPS", "Lat=" + lastLat + " Lon=" + lastLon);
-
-                  card("Lat: " + fmt(lastLat, 6) +
-                          "\nLon: " + fmt(lastLon, 6) +
-                          "\nAccuracy: " + loc.getAccuracy() + " m");
+                  card("Lat: " + fmt(lastLat, 6) + "\nLon: " + fmt(lastLon, 6) + "\nAccuracy: " + loc.getAccuracy() + " m");
               }
 
               private void showGold() {
@@ -281,25 +272,17 @@ jobs:
                       double f = num(feox);
                       double e = num(field);
 
-                      String decision;
                       double score = 0.32*s + 0.28*a + 0.18*p + 0.10*f + 0.12*e;
+                      String decision;
 
-                      if (s < 35 || a < 25) {
-                          decision = "REJECT: لا Structure كافي أو لا Clay/Silica كافي";
-                      } else if (score >= 78) {
-                          decision = "Class A: أولوية ميدانية عالية";
-                      } else if (score >= 60) {
-                          decision = "Class B: فحص عينة/GPZ";
-                      } else if (score >= 45) {
-                          decision = "Class C: استطلاع فقط";
-                      } else {
-                          decision = "REJECT/LOW";
-                      }
+                      if (s < 35 || a < 25) decision = "REJECT: لا Structure كافي أو لا Clay/Silica كافي";
+                      else if (score >= 78) decision = "Class A: أولوية عالية";
+                      else if (score >= 60) decision = "Class B: فحص GPZ وعينة";
+                      else if (score >= 45) decision = "Class C: استطلاع فقط";
+                      else decision = "REJECT/LOW";
 
-                      String r = "BOUH Score: " + fmt(score,1) + "/100" +
-                              "\nDecision: " + decision +
-                              "\n\nملاحظة صدق: هذه درجة إدخال يدوي وليست حسابًا طيفيًا من GeoTIFF.";
-
+                      String r = "BOUH Score: " + fmt(score,1) + "/100\nDecision: " + decision +
+                              "\n\nهذه درجة إدخال يدوي وليست حسابًا طيفيًا من GeoTIFF.";
                       addLog("TARGET", r);
                       card(r);
                   });
@@ -315,26 +298,14 @@ jobs:
                   btn("إعداد GPZ").setOnClickListener(v -> {
                       double m = num(magnetic);
                       double q = num(quartz);
-
                       String r;
 
                       if (m >= 75) {
-                          r = "Ground Type: Severe/Difficult\n" +
-                                  "Gold Mode: High Yield\n" +
-                                  "Sensitivity: 8-11\n" +
-                                  "Audio Smoothing: Low/On\n" +
-                                  "Swing: بطيء جدًا مع توازن أرضي متكرر";
+                          r = "Ground Type: Severe/Difficult\nGold Mode: High Yield\nSensitivity: 8-11\nAudio Smoothing: Low/On\nSwing: بطيء جدًا";
                       } else if (m < 45 && q >= 65) {
-                          r = "Ground Type: Normal\n" +
-                                  "Gold Mode: General/Deep\n" +
-                                  "Sensitivity: 12-16\n" +
-                                  "Audio Smoothing: Off\n" +
-                                  "Strategy: عمق أعلى في جيوب bedrock/quartz";
+                          r = "Ground Type: Normal\nGold Mode: General/Deep\nSensitivity: 12-16\nAudio Smoothing: Off";
                       } else {
-                          r = "Ground Type: Difficult\n" +
-                                  "Gold Mode: High Yield أو General حسب الصوت\n" +
-                                  "Sensitivity: 10-13\n" +
-                                  "Strategy: اختبار متدرج وتقليل الحساسية عند الضوضاء";
+                          r = "Ground Type: Difficult\nGold Mode: High Yield أو General\nSensitivity: 10-13";
                       }
 
                       addLog("GPZ", r);
@@ -373,14 +344,12 @@ jobs:
                           for (String w: norm(p[0]).split(" ")) {
                               if (nq.contains(w) && w.length() > 1) sc++;
                           }
-
                           if (sc > bestScore) {
                               bestScore = sc;
                               best = p[1];
                           }
                       }
                   }
-
                   return best;
               }
 
@@ -397,11 +366,9 @@ jobs:
 
                   btn("فرز الحالة").setOnClickListener(v -> {
                       String s = norm(symptoms.getText().toString());
-
                       String r = (s.contains("صدر") || s.contains("ضيق نفس") || s.contains("اغماء") || s.contains("نزيف"))
                               ? "طارئ: اذهب للطوارئ فورًا."
-                              : "غير طارئ ظاهريًا: راقب الحالة واشرب سوائل وراجع طبيبًا إذا استمرت الأعراض.";
-
+                              : "غير طارئ ظاهريًا: راقب الحالة وراجع طبيبًا إذا استمرت الأعراض.";
                       addLog("HEALTH", r);
                       card(r);
                   });
@@ -421,14 +388,13 @@ jobs:
                               "خذ من " + t + " معنى يشرّف مساري\n\n" +
                               "BOUH يشوف الأرض بعين البصيرة\n" +
                               "والذهب ما يطلع بغير اختباري";
-
                       addLog("POET", poem);
                       card(poem);
                   });
               }
 
               private void showLogs() {
-                  base("الملاحظات والسجل");
+                  base("السجل");
                   back();
 
                   EditText note = input("ملاحظة ميدانية");
@@ -442,8 +408,7 @@ jobs:
               }
 
               private String exportReport() {
-                  return "BOUH V68 REPORT\n" +
-                          new Date() +
+                  return "BOUH V68 REPORT\n" + new Date() +
                           "\nGPS=" + prefs.getString("last_gps", "-") +
                           "\n\nLOGS:\n" + prefs.getString("logs", "-");
               }
@@ -463,13 +428,7 @@ jobs:
               }
 
               private String norm(String s) {
-                  return s
-                          .replace('أ','ا')
-                          .replace('إ','ا')
-                          .replace('آ','ا')
-                          .replace('ة','ه')
-                          .replace('ى','ي')
-                          .toLowerCase(Locale.ROOT);
+                  return s.replace('أ','ا').replace('إ','ا').replace('آ','ا').replace('ة','ه').replace('ى','ي').toLowerCase(Locale.ROOT);
               }
 
               private String fmt(double v, int n) {
@@ -491,8 +450,18 @@ jobs:
 
       - name: Install Android SDK
         run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          set -e
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses || true
+          "$SDKMANAGER" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Build APK
-        run:
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BOUH_V68_ONE_UPLOAD_debug_apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
